@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="com.makadown.currencyapp.MainActivity">
+    <item
+        android:id="@+id/action_show_logs"
+        android:title="Log Visibility"
+        android:icon="@mipmap/ic_keyboard_hide"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_clear_logs"
+        android:title="Clear Logs"
+        android:icon="@mipmap/ic_clear"
+        app:showAsAction="ifRoom" />
+
+
+</menu>
