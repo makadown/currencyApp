@@ -2,6 +2,7 @@ package com.makadown.currencyapp;
 
 import android.content.Intent;
 import android.database.SQLException;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
@@ -13,6 +14,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.makadown.currencyapp.adapters.CurrencyAdapter;
@@ -51,13 +53,12 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         resetDownloads();
-        //initCurrencies();
+        initCurrencies();
         initDB();
         initToolBar();
         initSpinner();
         initCurrencyList();
-        //showLogs();
-
+        showLogs();
         mLogLayout = (CoordinatorLayout) findViewById( R.id.log_layout );
 
     }
@@ -101,11 +102,22 @@ public class MainActivity extends AppCompatActivity
                                 LogUtils.log(TAG, "Currency retrieval has failed");
                             }
                             if(currency != null) {
-                                String dbMessage = "Currency (DB): " + currency.getBase() + " - " +
-                                        currency.getName() + ": " + currency.getRate();
+                                String dbMessage = "Currency: " + currency.getBase() + " - " +
+                                        currency.getName() + ": " + currency.getRate() ;
+
                                 LogUtils.log(TAG, dbMessage);
-                                NotificationUtils.showNotificationMessage(getApplicationContext(),
-                                        "Currency Exchange Rate", dbMessage);
+                                LogUtils.log(TAG, "SDK Actual    " + String.valueOf(Build.VERSION.SDK_INT) );
+                                LogUtils.log(TAG, "SDK Comparado " + String.valueOf(Build.VERSION_CODES.M) );
+
+                                if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.M ) {
+                                    NotificationUtils.showNotificationMessage(getApplicationContext(),
+                                            "Currency Exchange Rate", dbMessage);
+                                }
+                                else
+                                {
+                                    NotificationUtils.showNotificationMessage(getApplicationContext(),
+                                            dbMessage, dbMessage);
+                                }
                             }
 
                             if(NotificationUtils.isAppInBackground(MainActivity.this)) {
@@ -182,16 +194,22 @@ public class MainActivity extends AppCompatActivity
         CurrencyAdapter baseCurrencyAdapter = new CurrencyAdapter(this);
         CurrencyAdapter targetCurrencyAdapter = new CurrencyAdapter(this);
 
+        mBaseCurrencyList.setAdapter(baseCurrencyAdapter);
+        mTargetCurrencyList.setAdapter(targetCurrencyAdapter);
+
         int baseCurrencyIndex = retrieveIndexOf(mBaseCurrency);
         int targetCurrencyIndex = retrieveIndexOf(mTargetCurrency);
 
-        mBaseCurrencyList.setItemChecked(baseCurrencyIndex);
-        mTargetCurrencyList.setItemChecked(targetCurrencyIndex);
+        mBaseCurrencyList.setItemChecked(baseCurrencyIndex, true);
+        mTargetCurrencyList.setItemChecked(targetCurrencyIndex, true);
 
         mBaseCurrencyList.setSelection(baseCurrencyIndex);
         mTargetCurrencyList.setSelection(targetCurrencyIndex);
 
+        addCurrencySelectionListener();
+
     }
+
 
     private int retrieveIndexOf(String currency)
     {
@@ -199,51 +217,72 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+    private void addCurrencySelectionListener(){
+        mBaseCurrencyList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                mBaseCurrency = Constants.CURRENCY_CODES[position];
+                LogUtils.log(TAG , "Base Currency has changed to: " + mBaseCurrency );
+                SharedPreferencesUtils.updateCurrency( MainActivity.this, mBaseCurrency, true );
+                retrieveCurrencyExchangeRate();
+
+            }
+        });
+
+        mTargetCurrencyList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                mTargetCurrency = Constants.CURRENCY_CODES[position] ;
+                LogUtils.log(TAG, "Target Currency has changed to : " + mTargetCurrency);
+                SharedPreferencesUtils.updateCurrency( MainActivity.this, mTargetCurrency, false );
+                retrieveCurrencyExchangeRate();
+            }
+        });
+    }
 
 
+    private void initCurrencies()
+    {
+        mBaseCurrency = SharedPreferencesUtils.getCurrency(this, true);
+        mTargetCurrency = SharedPreferencesUtils.getCurrency(this, false );
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    private void showLogs()
+    {
+        final TextView logText = (TextView ) findViewById(R.id.log_text);
+        LogUtils.setLogListener(new LogUtils.LogListener() {
+            @Override
+            public void onLogged(final StringBuffer log) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        logText.setText(log.toString());
+                        logText.invalidate();
+                    }
+                });
+            }
+        });
+    }
 
     private void retrieveCurrencyExchangeRate() {
-        CurrencyReceiver receiver = new CurrencyReceiver(new Handler());
-        receiver.setReceiver(this);
-        Intent intent = new Intent(Intent.ACTION_SYNC, null, getApplicationContext(), CurrencyService.class);
-        intent.setExtrasClassLoader(CurrencyService.class.getClassLoader());
+        if ( mServiceRepetition < AlarmUtils.REPEAT.values().length ) {
+            CurrencyReceiver receiver = new CurrencyReceiver(new Handler());
+            receiver.setReceiver(this);
+            Intent intent = new Intent(Intent.ACTION_SYNC, null, getApplicationContext(), CurrencyService.class);
+            intent.setExtrasClassLoader(CurrencyService.class.getClassLoader());
 
-        Bundle bundle = new Bundle();
-        String url = Constants.CURRENCY_URL + mBaseCurrency;
-        bundle.putString(Constants.URL, url);
-        bundle.putParcelable(Constants.RECEIVER, receiver);
-        bundle.putInt(Constants.REQUEST_ID, Constants.REQUEST_ID_NUM);
-        bundle.putString(Constants.CURRENCY_NAME, mTargetCurrency);
-        bundle.putString(Constants.CURRENCY_BASE, mBaseCurrency);
-        intent.putExtra(Constants.BUNDLE, bundle);
+            Bundle bundle = new Bundle();
+            String url = Constants.CURRENCY_URL + mBaseCurrency;
+            bundle.putString(Constants.URL, url);
+            bundle.putParcelable(Constants.RECEIVER, receiver);
+            bundle.putInt(Constants.REQUEST_ID, Constants.REQUEST_ID_NUM);
+            bundle.putString(Constants.CURRENCY_NAME, mTargetCurrency);
+            bundle.putString(Constants.CURRENCY_BASE, mBaseCurrency);
+            intent.putExtra(Constants.BUNDLE, bundle);
 //        startService(intent);
-        AlarmUtils.startService(this, intent,
-                AlarmUtils.REPEAT.values()[mServiceRepetition]);
+            AlarmUtils.startService(this, intent,
+                    AlarmUtils.REPEAT.values()[mServiceRepetition]);
+        }
     }
 
     private void resetDownloads() {
@@ -259,16 +298,23 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        switch(item.getItemId())
+        {
+            case R.id.action_clear_logs :
+                LogUtils.clearLogs();
+                return true;
+            case R.id.action_show_logs:
+                mIsLogVisible = !mIsLogVisible;
+                item.setIcon( mIsLogVisible ? R.drawable.ic_keyboard_hide: R.drawable.ic_keyboard );
+                mLogLayout.setVisibility(mIsLogVisible? View.VISIBLE : View.GONE );
+                break;
         }
-
         return super.onOptionsItemSelected(item);
     }
+
+
+
+
+
+
 }

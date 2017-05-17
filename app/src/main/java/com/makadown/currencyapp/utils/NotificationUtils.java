@@ -30,7 +30,7 @@ public class NotificationUtils {
         }
 
         if(isAppInBackground(context)) {
-            int icon = R.mipmap.ic_launcher;
+            int icon = R.drawable.ic_launcher;
             Intent intent = new Intent(context, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             PendingIntent resultPendingIntent = PendingIntent.getActivity(context, 0,
