@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -17,6 +18,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.mikephil.charting.charts.LineChart;
 import com.makadown.currencyapp.adapters.CurrencyAdapter;
 import com.makadown.currencyapp.database.CurrencyDatabaseAdapter;
 import com.makadown.currencyapp.database.CurrencyTableHelper;
@@ -41,10 +43,14 @@ public class MainActivity extends AppCompatActivity
     private int mServiceRepetition = AlarmUtils.REPEAT.REPEAT_EVERY_MINUTE.ordinal();
 
     private CoordinatorLayout mLogLayout;
+    private FloatingActionButton mFloatingActionButton;
+
     private boolean mIsLogVisible = true;
+    private boolean mFabVisible = true;
 
     private ListView mBaseCurrencyList;
     private ListView mTargetCurrencyList;
+    private LineChart mLineChart;
 
 
     @Override
@@ -58,8 +64,14 @@ public class MainActivity extends AppCompatActivity
         initToolBar();
         initSpinner();
         initCurrencyList();
+        initLineChart();
         showLogs();
         mLogLayout = (CoordinatorLayout) findViewById( R.id.log_layout );
+
+    }
+
+    private void initLineChart()
+    {
 
     }
 
@@ -128,6 +140,10 @@ public class MainActivity extends AppCompatActivity
                                     mServiceRepetition = AlarmUtils.REPEAT.REPEAT_EVERY_DAY.ordinal();
                                     retrieveCurrencyExchangeRate();
                                 }
+                            }
+                            else
+                            {
+                                //updateLineChart();
                             }
                         }
                     }
