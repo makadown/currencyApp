@@ -96,7 +96,7 @@
                android:layout_height="wrap_content"
                android:layout_marginBottom="16dp"
                android:clickable="true"
-               android:scr="@drawable/ic_menu"
+               android:src="@drawable/ic_menu"
                android:backgroundTint="@android:color/holo_blue_dark"
                app:borderWidth="0dp"
                android:elevation="6dp"

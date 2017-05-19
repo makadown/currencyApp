@@ -2,6 +2,7 @@ package com.makadown.currencyapp;
 
 import android.content.Intent;
 import android.database.SQLException;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,6 +20,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.makadown.currencyapp.adapters.CurrencyAdapter;
 import com.makadown.currencyapp.database.CurrencyDatabaseAdapter;
 import com.makadown.currencyapp.database.CurrencyTableHelper;
@@ -30,6 +40,7 @@ import com.makadown.currencyapp.utils.NotificationUtils;
 import com.makadown.currencyapp.utils.SharedPreferencesUtils;
 import com.makadown.currencyapp.value_objects.Currency;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity
@@ -72,8 +83,106 @@ public class MainActivity extends AppCompatActivity
 
     private void initLineChart()
     {
+        mLineChart = (LineChart) findViewById(R.id.line_chart);
+        mLineChart.setNoDataText("No Data");
+        mLineChart.setHighlightPerDragEnabled(true);
+        mLineChart.setHighlightPerTapEnabled(true);
+        mLineChart.setTouchEnabled(true);
+        mLineChart.setDrawGridBackground(false);
+        mLineChart.setPinchZoom(true);
+
+        LineData lineData = new LineData();
+        lineData.setValueTextColor(Color.BLUE);
+        mLineChart.setData(lineData);
+
+        Legend legend = mLineChart.getLegend();
+        legend.setForm( Legend.LegendForm.LINE );
+        legend.setTextColor(ColorTemplate.getHoloBlue());
+
+        XAxis xAxis = mLineChart.getXAxis();
+        xAxis.setTextColor(Color.BLACK);
+        xAxis.setDrawGridLines(false);
+        xAxis.setAvoidFirstLastClipping(true);
+
+        YAxis yAxis = mLineChart.getAxisLeft();
+        yAxis.setTextColor(Color.BLACK);
+        yAxis.setAxisMaxValue(120f);
+        yAxis.setDrawGridLines(true);
+
+        YAxis yAxisRight = mLineChart.getAxisRight();
+        yAxisRight.setEnabled(false);
 
     }
+
+    private void updateLineChart()
+    {
+        Description desc = new Description();
+        desc.setText("Currency Exchange Rate: " + mBaseCurrency + " - " + mTargetCurrency);
+        mLineChart.setDescription(desc);
+        ArrayList<Currency> currencies = mCurrencyTableHelper.getCurrencyHistory(mBaseCurrency, mTargetCurrency);
+        LineData lineData = mLineChart.getLineData();
+        lineData.clearValues();
+        for(Currency currency: currencies)
+        {
+            addChartEntry(currency.getDate(), currency.getRate());
+        }
+    }
+
+    private void addChartEntry(String date, double value)
+    {
+        LineData lineData = mLineChart.getLineData();
+        if ( lineData != null )
+        {
+            ILineDataSet lineDataSet = lineData.getDataSetByIndex(0);
+            if ( lineDataSet == null  )
+            {
+                lineDataSet = createSet();
+                lineData.addDataSet(lineDataSet);
+            }
+
+
+            if (  mLineChart.getData().getDataSets().contains(date) )
+            {
+                Entry xValue = new Entry();
+                xValue.setData(date);
+                lineData.addEntry( xValue, 0);
+            }
+
+            Entry entry = new Entry((float)value, lineDataSet.getEntryCount());
+            lineData.addEntry(entry,0);
+            mLineChart.notifyDataSetChanged();
+        }
+    }
+
+    private ILineDataSet createSet()
+    {
+        LineDataSet lineDataSet = new LineDataSet(null, "value");
+        lineDataSet.setDrawCircles(true);
+        lineDataSet.setCubicIntensity(0.2f);
+        lineDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        lineDataSet.setColor(ColorTemplate.getHoloBlue());
+        lineDataSet.setCircleColor(ColorTemplate.getHoloBlue());
+        lineDataSet.setLineWidth(0.2f);
+        lineDataSet.setCircleSize(4f);
+        lineDataSet.setFillAlpha(65);
+        lineDataSet.setFillColor(ColorTemplate.getHoloBlue());
+        lineDataSet.setHighLightColor(Color.CYAN);
+        lineDataSet.setValueTextColor(Color.BLACK);
+        lineDataSet.setValueTextSize(10f);
+
+        return lineDataSet;
+    }
+
+
+
+
+
+
+
+
+
+
+
 
     @Override
     protected void onResume() {
@@ -143,7 +252,7 @@ public class MainActivity extends AppCompatActivity
                             }
                             else
                             {
-                                //updateLineChart();
+                                 updateLineChart();
                             }
                         }
                     }

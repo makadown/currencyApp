@@ -3,7 +3,7 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="com.makadown.currencyapp.MainActivity">
 
-    <item android:id="+id/action_show_fab"
+    <item android:id="@+id/action_show_fab"
         android:icon="@drawable/ic_remove"
         android:title="@string/fab_title"
         app:showAsAction="ifRoom" />
